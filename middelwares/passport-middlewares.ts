@@ -2,12 +2,12 @@ const passport = require("passport");
 const { Strategy, ExtractJwt } = require("passport-jwt");
 import { config } from "dotenv";
 const db = require("../models/index");
-import { Request } from "express";
+import { Request, Response, NextFunction } from "express";
 
 config();
 const SECRET = process.env.SECRET;
 
-const cookieExtractor = function (req: Request) {
+const cookieExtractor = function (req: Request, res: Response, next: NextFunction) {
     let token = null;
     if (req && req.cookies) token = req.cookies["jwt"];
     return token;
