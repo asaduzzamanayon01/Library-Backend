@@ -11,7 +11,6 @@ const cookieExtractor = function (req: Request, res: Response, next: NextFunctio
     let token = null;
     if (req && req.cookies) token = req.cookies["jwt"];
     return token;
-    // ExtractJwt.fromAuthHeaderAsBearerToken()
 };
 
 const opts = {

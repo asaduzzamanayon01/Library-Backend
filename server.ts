@@ -18,6 +18,7 @@ app.use(cors({ origin: CLIENT_URL, credentials: true }))
 app.use(passport.initialize())
 
 app.use('/api', routes)
+app.use('/uploads', express.static('uploads'));
 
 //app start
 const appStart = () => {
