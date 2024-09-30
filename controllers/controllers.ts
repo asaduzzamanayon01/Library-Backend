@@ -1,7 +1,7 @@
 import { Client } from '@elastic/elasticsearch';
-
-import { upload } from '../multer_conf';
 const client = new Client({ node: 'http://localhost:9200' });
+
+
 import { Request, Response } from "express"
 import { config } from 'dotenv';
 const db = require('../models/index')
@@ -17,6 +17,22 @@ interface AuthenticatedRequest extends Request {
         [key: string]: any;
     };
 }
+
+interface BookElastic {
+    book_id: number;
+    user_id: number;
+    title: string;
+    language: string;
+    pages: number;
+    publish_date: string;
+    cover_img: string;
+    price: number;
+    author: string;
+    description_text: string;
+    publisher: string;
+    created_at: string; // Adjust the type as necessary for your timestamp
+}
+
 
 exports.getBooks = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -57,159 +73,6 @@ exports.getBooks = async (req: Request, res: Response) => {
         return res.status(500).json({ error: 'An unknown error occurred' });
     }
 };
-
-// elastic search getBooks
-// exports.getBooks = async (req: Request, res: Response) => {
-//     const limit = parseInt(req.query.limit as string, 10) || 10;
-//     const offset = parseInt(req.query.offset as string, 10) || 0;
-//     const genreId = parseInt(req.query.genre as string, 10) || 0;
-//     const searchTitle = (req.query.search as string)?.toLowerCase() || '';
-
-//     try {
-//         // Build Elasticsearch query
-//         const query: any = {
-//             bool: {
-//                 must: [],
-//                 filter: [],
-//             },
-//         };
-
-//         if (searchTitle) {
-//             query.bool.must.push({
-//                 match: { title: searchTitle },
-//             });
-//         }
-
-//         if (genreId) {
-//             query.bool.filter.push({
-//                 term: { genre_id: genreId },
-//             });
-//         }
-
-//         // Perform search in Elasticsearch
-//         const result = await client.search({
-//             index: 'books',
-//             from: offset,
-//             size: limit,
-//             body: {
-//                 query,
-//                 sort: [{ created_at: 'desc' }],
-//             },
-//         });
-
-//         // Access hits and total safely
-//         const books = result.hits.hits.map((hit: any) => hit._source);
-
-//         // Check if total exists and handle possible types
-//         const totalBooksByGenre = result.hits.total
-//             ? typeof result.hits.total === 'number'
-//                 ? result.hits.total
-//                 : result.hits.total.value
-//             : 0; // Fallback to 0 if undefined
-
-//         const hasMoreBooks = offset + limit < totalBooksByGenre;
-
-//         // You can fetch the genre name from your DB if needed
-//         const genreName = genreId ? 'Some Genre' : 'Unknown Genre';
-
-//         return res.status(200).json({
-//             id: uuidv4(),
-//             books,
-//             hasMoreBooks,
-//             genre: genreName,
-//             genreId,
-//         });
-//     } catch (error: unknown) {
-//         if (error instanceof Error) {
-//             return res.status(500).json({ error: error.message });
-//         }
-//         return res.status(500).json({ error: 'An unknown error occurred' });
-//     }
-// };
-
-// exports.getBooks = async (req: Request, res: Response) => {
-//     const limit = parseInt(req.query.limit as string, 10) || 10;
-//     const offset = parseInt(req.query.offset as string, 10) || 0;
-//     const genreId = parseInt(req.query.genre as string, 10) || 0;
-//     const searchTitle = (req.query.search as string)?.toLowerCase() || '';
-
-//     try {
-//         // Build Elasticsearch query for books
-//         const query: any = {
-//             bool: {
-//                 must: [],
-//                 filter: [],
-//             },
-//         };
-
-//         if (searchTitle) {
-//             query.bool.must.push({
-//                 match: { title: searchTitle },
-//             });
-//         }
-
-//         if (genreId) {
-//             query.bool.filter.push({
-//                 term: { genre_id: genreId },
-//             });
-//         }
-
-//         // Perform search in Elasticsearch for books
-//         const result = await client.search({
-//             index: 'books',
-//             from: offset,
-//             size: limit,
-//             body: {
-//                 query,
-//                 sort: [{ created_at: 'desc' }],
-//             },
-//         });
-
-//         // Access hits and total safely
-//         const books = result.hits.hits.map((hit: any) => hit._source);
-
-//         // Check if total exists and handle possible types
-//         const totalBooksByGenre = result.hits.total
-//             ? typeof result.hits.total === 'number'
-//                 ? result.hits.total
-//                 : result.hits.total.value
-//             : 0; // Fallback to 0 if undefined
-
-//         const hasMoreBooks = offset + limit < totalBooksByGenre;
-
-//         // Fetch genre name from Elasticsearch
-//         let genreName = 'Unknown Genre'; // Default genre name
-//         if (genreId) {
-//             const genreResult: ApiResponse = await client.search({
-//                 index: 'genres',
-//                 body: {
-//                     query: {
-//                         term: { genre_id: genreId },
-//                     },
-//                 },
-//             });
-
-//             if (genreResult.body.hits.hits.length > 0) {
-//                 // Use type assertion to access genre name safely
-//                 genreName = (genreResult.body.hits.hits[0]._source as { genre_name: string }).genre_name; // Get genre name from the first hit
-//             }
-//         }
-
-//         return res.status(200).json({
-//             id: uuidv4(),
-//             books,
-//             hasMoreBooks,
-//             genre: genreName,
-//             genreId,
-//         });
-//     } catch (error: unknown) {
-//         if (error instanceof Error) {
-//             return res.status(500).json({ error: error.message });
-//         }
-//         return res.status(500).json({ error: 'An unknown error occurred' });
-//     }
-// };
-
 
 exports.getRecentBooks = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -309,48 +172,6 @@ exports.getGenres = async (req:Request, res: Response) => {
     }
 }
 
-
-//elastic getGenre
-// exports.getGenres = async (req: Request, res: Response) => {
-//     const limit = parseInt(req.query.limit as string, 10) || 5;
-//     const offset = parseInt(req.query.offset as string, 10) || 0;
-
-//     try {
-//         // Elasticsearch query to fetch genres with pagination
-//         const searchResponse = await client.search({
-//             index: "genres", // Assuming the genres data is indexed under 'genres'
-//             from: offset, // Pagination: starting point (like OFFSET in SQL)
-//             size: limit,  // Number of items to return (like LIMIT in SQL)
-//         });
-
-//         // Handle both number and object types for `total`
-//         let totalGenres;
-//         if (typeof searchResponse.hits.total === 'number') {
-//             totalGenres = searchResponse.hits.total; // If total is a number, use it directly
-//         } else {
-//             totalGenres = searchResponse.hits.total?.value || 0; // If total is an object, get the value
-//         }
-
-//         const hasMoreGenres = offset + limit < totalGenres;
-
-//         // Extract the genres from the search result
-//         const genres = searchResponse.hits.hits.map((hit: any) => ({
-//             genre_id: hit._id,
-//             genre_name: hit._source.genre_name,
-//         }));
-
-//         return res.status(200).json({
-//             genres,
-//             hasMoreGenres
-//         });
-//     } catch (error: unknown) {
-//         if (error instanceof Error) {
-//             return res.status(500).json({ error: error.message });
-//         }
-//         return res.status(500).json({ error: "An unknown error occurred" });
-//     }
-// };
-
 exports.getDetails = async (req: Request, res: Response) => {
     try {
         const book_id = parseInt(req.params.book_id, 10);
@@ -404,8 +225,20 @@ exports.handleInteraction =    async (req: Request, res: Response) => {
           const insertQuery = 'INSERT INTO interactions (user_id, book_id, "like") VALUES ($1, $2, $3) RETURNING *';
           result = await db.query(insertQuery, [userId, book_id, like]);
         }
-
-        res.status(200).json(result.rows[0]);
+        const interaction = result.rows[0];
+        // Update or insert into Elasticsearch
+        await client.index({
+                    index: 'interactions',
+                    id: `${interaction.user_id}-${interaction.book_id}`,
+                    body: {
+                        interaction_id: interaction.interaction_id,
+                        user_id: interaction.user_id,
+                        book_id: interaction.book_id,
+                        like: interaction.like,
+                        created_at: interaction.created_at
+                    }
+                });
+        res.status(200).json(interaction);
       }
      catch (error) {
       console.error('Error handling interaction:', error);
@@ -426,6 +259,19 @@ exports.register = async (req: Request, res: Response)=>{
             email: newUser.email
         };
         const token = await sign(payload, SECRET, { expiresIn: '99999h' });
+
+                // Insert user into Elasticsearch
+                await client.index({
+                    index: 'users',
+                    id: newUser.user_id.toString(),
+                    body: {
+                        user_id: newUser.user_id,
+                        username: newUser.username,
+                        email: newUser.email,
+                        password: newUser.password,
+                        created_at: newUser.created_at
+                    }
+                });
         return res.status(201).cookie('jwt', token, {httpOnly: true, sameSite: 'strict'}).json(
             {
                 success: true,
@@ -475,10 +321,113 @@ exports.logout = async (req: Request, res: Response) => {
   }
 }
 
+// exports.createBooks = async (req: Request, res: Response) => {
+//     const {
+//         title, language, pages, publish_date, price, author, description_text, publisher, genres
+//     } = req.body;
+
+//     const userId = (req as AuthenticatedRequest).user?.id;
+
+//     if (!userId) {
+//         return res.status(401).json({
+//             success: false,
+//             message: 'Unauthorized'
+//         });
+//     }
+
+//     try {
+//         const coverImgPath = req.file ? req.file.path : null;
+//         const response = await db.query(
+//             'INSERT INTO books (title, language, pages, publish_date, cover_img, price, author, description_text, publisher, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+//             [title, language, pages, publish_date, coverImgPath, price, author, description_text, publisher, userId]
+//         );
+
+//         const newBook = response.rows[0];
+//         const bookId = newBook.book_id;
+
+//         // Insert selected genres into book_genre table
+//         const genreIds = JSON.parse(genres);
+//         if (Array.isArray(genreIds) && genreIds.length > 0) {
+//             const genreInsertPromises = genreIds.map((genreId: number) => {
+//                 return db.query(
+//                     'INSERT INTO book_genre (book_id, genre_id) VALUES ($1, $2)',
+//                     [bookId, genreId]
+//                 );
+//             });
+//             await Promise.all(genreInsertPromises);
+//         }
+
+//         // Insert book into Elasticsearch books index
+//         await client.index({
+//             index: 'books',
+//             id: bookId.toString(),
+//             body: {
+//                 book_id: bookId,
+//                 title: newBook.title,
+//                 language: newBook.language,
+//                 pages: newBook.pages,
+//                 publish_date: newBook.publish_date,
+//                 cover_img: newBook.cover_img,
+//                 price: newBook.price,
+//                 author: newBook.author,
+//                 description_text: newBook.description_text,
+//                 publisher: newBook.publisher,
+//                 user_id: newBook.user_id,
+//                 created_at: newBook.created_at,
+//             }
+//         });
+
+//     // Insert book_genre into Elasticsearch book_genre index
+//     // if (Array.isArray(genreIds) && genreIds.length > 0) {
+//     //     const bookGenreIndexPromises = genreIds.map((genreId: number) => {
+//     //         return client.index({
+//     //             index: 'book_genre',
+//     //             id: `${bookId}-${genreId}`,
+//     //             body: {
+//     //                 book_id: bookId,
+//     //                 genre_id: genreId
+//     //             }
+//     //         });
+//     //     });
+//     //     await Promise.all(bookGenreIndexPromises);
+//     // }
+//     if (Array.isArray(genreIds) && genreIds.length > 0) {
+//         const bulkBody = genreIds.flatMap(genreId => [
+//             { index: { _index: 'book_genre', _id: `${bookId}-${genreId}` } },
+//             { book_id: bookId, genre_id: genreId }
+//         ]);
+//         const bulkResponse = await client.bulk({ body: bulkBody });
+//         if (bulkResponse.errors) {
+//             console.error('Bulk insert errors:', bulkResponse.items);
+//             throw new Error('Failed to insert all genres into Elasticsearch');
+//         }
+//     }
+
+
+//         return res.status(201).json({
+//             success: true,
+//             message: 'Book created successfully',
+//             book: newBook,
+//         });
+//     } catch (error: unknown) {
+//         console.error('Error in createBooks:', error);
+//         if (error instanceof Error) {
+//             return res.status(500).json({
+//                 success: false,
+//                 message: error.message
+//             });
+//         }
+//         return res.status(500).json({
+//             success: false,
+//             message: 'An unknown error occurred'
+//         });
+//     }
+// };
+
+
 exports.createBooks = async (req: Request, res: Response) => {
     const {
-        title, rating, language, pages, publish_date,
-        num_ratings, price, author, description_text, publisher, genres
+        title, language, pages, publish_date, price, author, description_text, publisher, genres
     } = req.body;
 
     const userId = (req as AuthenticatedRequest).user?.id;
@@ -491,27 +440,83 @@ exports.createBooks = async (req: Request, res: Response) => {
     }
 
     try {
+        console.log('Starting book creation process');
         const coverImgPath = req.file ? req.file.path : null;
         const response = await db.query(
-            'INSERT INTO books (title, rating, language, pages, publish_date, num_ratings, cover_img, price, author, description_text, publisher, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-            [title, rating, language, pages, publish_date, num_ratings, coverImgPath, price, author, description_text, publisher, userId]
+            'INSERT INTO books (title, language, pages, publish_date, cover_img, price, author, description_text, publisher, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+            [title, language, pages, publish_date, coverImgPath, price, author, description_text, publisher, userId]
         );
 
         const newBook = response.rows[0];
         const bookId = newBook.book_id;
+        console.log(`Book inserted into PostgreSQL with ID: ${bookId}`);
 
         // Insert selected genres into book_genre table
         const genreIds = JSON.parse(genres);
+        console.log(`Parsed genre IDs: ${JSON.stringify(genreIds)}`);
+
         if (Array.isArray(genreIds) && genreIds.length > 0) {
             const genreInsertPromises = genreIds.map((genreId: number) => {
                 return db.query(
                     'INSERT INTO book_genre (book_id, genre_id) VALUES ($1, $2)',
                     [bookId, genreId]
-                );
+                ).then(() => console.log(`Genre ${genreId} inserted into PostgreSQL for book ${bookId}`))
+
+                .catch((err: Error) => console.error(`Error inserting genre ${genreId} into PostgreSQL:`, err));
             });
             await Promise.all(genreInsertPromises);
         }
 
+        // Insert book into Elasticsearch books index
+        console.log('Inserting book into Elasticsearch');
+        await client.index({
+            index: 'books',
+            id: bookId.toString(),
+            body: {
+                book_id: bookId,
+                title: newBook.title,
+                language: newBook.language,
+                pages: newBook.pages,
+                publish_date: newBook.publish_date,
+                cover_img: newBook.cover_img,
+                price: newBook.price,
+                author: newBook.author,
+                description_text: newBook.description_text,
+                publisher: newBook.publisher,
+                user_id: newBook.user_id,
+                created_at: newBook.created_at,
+            }
+        });
+        console.log(`Book inserted into Elasticsearch with ID: ${bookId}`);
+
+        // Insert book_genre into Elasticsearch book_genre index
+        console.log('Inserting book_genre relations into Elasticsearch');
+        if (Array.isArray(genreIds) && genreIds.length > 0) {
+            const bookGenreIndexPromises = genreIds.map((genreId: number) => {
+                return client.index({
+                    index: 'book_genre',
+                    id: `${bookId}-${genreId}`,
+                    body: {
+                        book_id: bookId,
+                        genre_id: genreId
+                    }
+                }).then(() => console.log(`Genre ${genreId} indexed in Elasticsearch for book ${bookId}`))
+                  .catch(err => {
+                      console.error(`Failed to index genre ${genreId} for book ${bookId} in Elasticsearch:`, err);
+                      throw err;
+                  });
+            });
+
+            try {
+                await Promise.all(bookGenreIndexPromises);
+                console.log('All book_genre relations inserted into Elasticsearch');
+            } catch (error) {
+                console.error('Error during book_genre Elasticsearch insertion:', error);
+                // Consider how to handle partial failures here
+            }
+        }
+
+        console.log('Book creation process completed successfully');
         return res.status(201).json({
             success: true,
             message: 'Book created successfully',
@@ -594,8 +599,6 @@ exports.getUsers = async (req: Request, res: Response) => {
             [userId]
         );
 
-        const username = await db.query('SELECT username FROM users WHERE user_id = $1', [userId]);
-
         return res.status(200).json({
             success: true,
             added_books: add_response.rows,
@@ -654,6 +657,244 @@ exports.isBookLikedByUser = async (req: Request, res: Response) => {
                 message: error.message
             });
         }
+        return res.status(500).json({
+            success: false,
+            message: 'An unknown error occurred'
+        });
+    }
+};
+
+exports.editBooks = async (req: Request, res: Response) => {
+    const { title, language, pages, publish_date, price, author, description_text, publisher, genres } = req.body;
+    const bookId = parseInt(req.query.book_id as string, 10) || 0;
+    const userId = (req as AuthenticatedRequest).user?.id;
+
+    if (!userId) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized'
+        });
+    }
+
+    console.log(`Editing book with ID: ${bookId} for user ID: ${userId}`);
+
+    try {
+        // Check if the book exists and belongs to the user
+        const checkQuery = 'SELECT * FROM books WHERE book_id = $1 AND user_id = $2';
+        const checkResult = await db.query(checkQuery, [bookId, userId]);
+
+        if (checkResult.rows.length === 0) {
+            console.log(`Book not found or does not belong to user. Book ID: ${bookId}, User ID: ${userId}`);
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found or you do not have permission to edit this book'
+            });
+        }
+
+        // Build the update query dynamically based on provided fields
+        const updateFields = [
+            title, language, pages, publish_date, price, author, description_text, publisher, bookId, userId
+        ];
+        let updateQuery = `
+            UPDATE books
+            SET title = $1, language = $2, pages = $3, publish_date = $4, price = $5, author = $6, description_text = $7, publisher = $8
+            WHERE book_id = $9 AND user_id = $10
+            RETURNING *
+        `;
+
+        const updateResponse = await db.query(updateQuery, updateFields);
+        const updatedBook = updateResponse.rows[0];
+
+        // Update genres in book_genre table if genres field is provided
+        if (genres) {
+            let genreIds = [];
+            try {
+                genreIds = JSON.parse(genres);
+            } catch (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: `"${genres}" is not valid JSON`
+                });
+            }
+
+            if (Array.isArray(genreIds) && genreIds.length > 0) {
+                // Delete existing genres
+                await db.query('DELETE FROM book_genre WHERE book_id = $1', [bookId]);
+
+                // Insert new genres
+                const genreInsertPromises = genreIds.map((genreId: number) => {
+                    return db.query('INSERT INTO book_genre (book_id, genre_id) VALUES ($1, $2)', [bookId, genreId]);
+                });
+                await Promise.all(genreInsertPromises);
+            }
+        }
+
+        // Check current values in Elasticsearch before updating
+        const esCheck = await client.get({
+            index: 'books',
+            id: updatedBook.book_id.toString(),
+        });
+
+
+// Type assertion to inform TypeScript about the structure
+const currentBook: BookElastic = esCheck._source as BookElastic;
+        console.log('Current book in Elasticsearch before update:', currentBook);
+
+        // Prepare the fields to update in Elasticsearch
+        const updateBody: Partial<BookElastic> = {};
+        if (bookId && bookId !== currentBook.book_id) updateBody.book_id = bookId;
+        if (userId && userId !== currentBook.user_id) updateBody.book_id = userId;
+        if (title && title !== currentBook.title) updateBody.title = title;
+        if (language && language !== currentBook.language) updateBody.language = language;
+        if (pages && pages !== currentBook.pages) updateBody.pages = pages;
+        if (publish_date && publish_date !== currentBook.publish_date) updateBody.publish_date = publish_date;
+        if (price && price !== currentBook.price) updateBody.price = price;
+        if (author && author !== currentBook.author) updateBody.author = author;
+        if (description_text && description_text !== currentBook.description_text) updateBody.description_text = description_text;
+        if (publisher && publisher !== currentBook.publisher) updateBody.publisher = publisher;
+
+        // Update book in Elasticsearch using Update API only if there are changes
+        if (Object.keys(updateBody).length > 0) {
+            try {
+                const esResponse = await client.update({
+                    index: 'books',
+                    id: updatedBook.book_id.toString(),
+                    body: {
+                        doc: updateBody,
+                    },
+                    refresh: true  // Ensure the index is refreshed immediately
+                });
+
+                // Log Elasticsearch response
+                console.log('Elasticsearch update response:', esResponse);
+            } catch (elasticsearchError) {
+                console.error('Error updating Elasticsearch:', elasticsearchError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error updating Elasticsearch'
+                });
+            }
+        } else {
+            console.log('No updates required for Elasticsearch document');
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Book updated successfully',
+            book: updatedBook
+        });
+    } catch (error: unknown) {
+        console.error('Error in editBooks:', error);
+        if (error instanceof Error) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: 'An unknown error occurred'
+        });
+    }
+};
+
+exports.deleteBook = async (req: Request, res: Response) => {
+    const userId = (req as AuthenticatedRequest).user?.id;
+    const bookId = Number(req.query.bookId); // Using req.query to get bookId
+
+    if (!userId) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized'
+        });
+    }
+
+    try {
+        // Fetch the book to check if it exists and belongs to the user
+        const bookResponse = await client.get<{ _source: BookElastic }>({
+            index: 'books',
+            id: bookId.toString() // Ensure bookId is a string as Elasticsearch IDs are strings
+        });
+
+        // Check if the book was found and extract _source safely
+        if (!bookResponse.found || !bookResponse._source) {
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found'
+            });
+        }
+
+        // Use type assertion to tell TypeScript that _source is BookElastic
+        const book: BookElastic = bookResponse._source as unknown as BookElastic;
+
+        // Check if the book belongs to the user
+        if (book.user_id !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not allowed to delete this book'
+            });
+        }
+
+        // Delete the book from Elasticsearch
+        await client.delete({
+            index: 'books',
+            id: bookId.toString() // Ensure bookId is a string
+        });
+
+        console.log(`Book with ID ${bookId} deleted from books index`);
+
+        // Delete associated interactions from Elasticsearch
+        const interactionResponse = await client.search({
+            index: 'interactions',
+            query: {
+                term: { book_id: bookId }
+            }
+        });
+
+        const interactionIds = interactionResponse.hits.hits.map((hit: any) => hit._id);
+
+        for (const interactionId of interactionIds) {
+            await client.delete({
+                index: 'interactions',
+                id: interactionId
+            });
+        }
+
+        console.log(`Interactions for book ID ${bookId} deleted`);
+
+        // Delete book from book_genre index
+        const bookGenreResponse = await client.search({
+            index: 'book_genre',
+            query: {
+                term: { book_id: bookId }
+            }
+        });
+
+        const bookGenreIds = bookGenreResponse.hits.hits.map((hit: any) => hit._id);
+
+        for (const bookGenreId of bookGenreIds) {
+            await client.delete({
+                index: 'book_genre',
+                id: bookGenreId
+            });
+        }
+
+        console.log(`Book-genre relations for book ID ${bookId} deleted`);
+
+        return res.status(200).json({
+            success: true,
+            message: `Book with ID ${bookId} and all related data deleted`
+        });
+    } catch (error: unknown) {
+        console.error('Error in deleteBook:', error);
+
+        if (error instanceof Error) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+
         return res.status(500).json({
             success: false,
             message: 'An unknown error occurred'
